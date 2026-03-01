@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Buddy PWA</title>
+    <title>Workout Buddy</title>
     <style>
         :root {
             --bg: #000000;
             --card-bg: #1c1c1e;
             --accent: #ff9500;
             --text: #ffffff;
+            --secondary-text: #8e8e93;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -20,28 +21,28 @@
             height: 100vh;
             overflow: hidden;
         }
-        /* LEFT COLUMN: Input & Controls */
-        .input-side {
+        /* LEFT SIDE: Logic & Inputs */
+        .main-content {
             width: 60%;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            overflow-y: auto;
             border-right: 1px solid #333;
         }
-        /* RIGHT COLUMN: Image & Stats */
-        .stats-side {
+        /* RIGHT SIDE: Image & Live Stats */
+        .sidebar {
             width: 40%;
             display: flex;
             flex-direction: column;
             background: #000;
         }
-        .coach-image-container {
+        .coach-box {
             flex-grow: 1;
             position: relative;
-            overflow: hidden;
         }
-        .coach-image-container img {
+        .coach-box img {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -51,79 +52,131 @@
             background: var(--card-bg);
             border-top: 2px solid var(--accent);
         }
-        .volume-label { font-size: 12px; color: #8e8e93; font-weight: bold; }
-        .volume-number { font-size: 32px; font-weight: 900; color: var(--accent); }
-        
-        input, select, button {
-            background: var(--card-bg);
-            border: 1px solid #38383a;
+        /* UI Elements */
+        .header-row { display: flex; justify-content: space-between; align-items: center; }
+        .config-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 5px 10px; border-radius: 8px; font-size: 12px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 12px; color: var(--secondary-text); font-weight: bold; }
+        input, select {
+            background: #2c2c2e;
+            border: 1px solid #3a3a3c;
             color: white;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 12px;
+            border-radius: 10px;
             font-size: 16px;
         }
-        button {
+        .action-btn {
             background: var(--accent);
             color: black;
             font-weight: bold;
+            padding: 15px;
             border: none;
-            cursor: pointer;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-top: 10px;
         }
-        .active { background: #ff3b30; color: white; }
+        .stop-btn { background: #ff3b30; color: white; }
+        .volume-display { font-size: 36px; font-weight: 900; color: var(--accent); margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="input-side">
-        <h2 style="margin:0; color:var(--accent);">SESSION</h2>
-        
-        <select id="exercise">
-            <option>Bench Press</option>
-            <option>Squats</option>
-            <option>Deadlift</option>
-        </select>
-
-        <div style="display:flex; gap:10px;">
-            <input type="number" id="weight" placeholder="lbs" style="width:50%">
-            <input type="number" id="reps" placeholder="reps" style="width:50%">
+    <div class="main-content">
+        <div class="header-row">
+            <h1 style="margin:0; font-size: 24px;">Workout Buddy</h1>
+            <button class="config-btn" onclick="toggleConfig()">CONFIG</button>
         </div>
 
-        <button id="logBtn" onclick="logSet()">LOG SET</button>
-        <button id="sessionBtn" onclick="toggleSession()">START SESSION</button>
+        <div id="sessionInfo" style="font-size: 14px; color: var(--secondary-text);">
+            <span id="displayDate"></span> | <span id="displayTime">--:--</span>
+        </div>
+
+        <div class="input-group">
+            <label>EXERCISE</label>
+            <select id="exerciseSelect">
+                <option>Select Exercise...</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="input-group" style="flex: 1;">
+                <label>WEIGHT (LBS)</label>
+                <input type="number" id="weightInput" placeholder="0">
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <label>REPS</label>
+                <input type="number" id="repsInput" placeholder="0">
+            </div>
+        </div>
+
+        <button class="action-btn" onclick="logSet()">LOG SET</button>
+        <button id="mainAction" class="action-btn" style="background:#30d158" onclick="handleSession()">START SESSION</button>
+
+        <div id="logList" style="margin-top:10px; font-size: 13px; color: var(--secondary-text);">
+            </div>
     </div>
 
-    <div class="stats-side">
-        <div class="coach-image-container">
-            <img src="profile.jpg" onerror="this.src='https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop'" alt="Coach">
+    <div class="sidebar">
+        <div class="coach-box">
+            <img src="profile.jpg" onerror="this.src='https://via.placeholder.com/400x800?text=Coach+Photo'" alt="Coach">
         </div>
         <div class="stats-overlay">
-            <div class="volume-label">TOTAL VOLUME</div>
-            <div id="totalVolume" class="volume-number">0</div>
+            <label>SESSION VOLUME</label>
+            <div id="totalVolume" class="volume-display">0</div>
         </div>
     </div>
 
     <script>
         let totalVolume = 0;
-        let sessionActive = false;
+        let isSessionActive = false;
+        let startTime = null;
 
-        function logSet() {
-            const w = document.getElementById('weight').value;
-            const r = document.getElementById('reps').value;
-            if(w && r) {
-                totalVolume += (w * r);
-                document.getElementById('totalVolume').innerText = totalVolume.toLocaleString();
+        // Initialize Date
+        document.getElementById('displayDate').innerText = new Date().toLocaleDateString();
+
+        function handleSession() {
+            const btn = document.getElementById('mainAction');
+            if (!isSessionActive) {
+                isSessionActive = true;
+                startTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('displayTime').innerText = "Started: " + startTime;
+                btn.innerText = "END SESSION";
+                btn.classList.add('stop-btn');
+            } else {
+                alert("Workout Summary\nTotal Volume: " + totalVolume + " lbs");
+                location.reload(); // Resets for next time
             }
         }
 
-        function toggleSession() {
-            sessionActive = !sessionActive;
-            const btn = document.getElementById('sessionBtn');
-            btn.innerText = sessionActive ? "END SESSION" : "START SESSION";
-            btn.classList.toggle('active');
-            if(!sessionActive) {
-                alert("Workout Complete! Total Volume: " + totalVolume);
-                totalVolume = 0;
-                document.getElementById('totalVolume').innerText = "0";
+        function logSet() {
+            if (!isSessionActive) { alert("Start the session first!"); return; }
+            
+            const w = parseFloat(document.getElementById('weightInput').value);
+            const r = parseFloat(document.getElementById('repsInput').value);
+            const ex = document.getElementById('exerciseSelect').value;
+
+            if (w && r) {
+                const setVolume = w * r;
+                totalVolume += setVolume;
+                document.getElementById('totalVolume').innerText = totalVolume.toLocaleString();
+                
+                // Add to mini log
+                const logEntry = document.createElement('div');
+                logEntry.innerText = `${ex}: ${w} x ${r}`;
+                document.getElementById('logList').prepend(logEntry);
+                
+                // Clear inputs
+                document.getElementById('weightInput').value = "";
+                document.getElementById('repsInput').value = "";
+            }
+        }
+
+        function toggleConfig() {
+            const newEx = prompt("Enter a new exercise name:");
+            if (newEx) {
+                const option = document.createElement("option");
+                option.text = newEx;
+                document.getElementById('exerciseSelect').add(option);
             }
         }
     </script>
