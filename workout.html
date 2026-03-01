@@ -8,29 +8,39 @@
         :root { --bg: #000000; --card: #1c1c1e; --accent: #ff9500; --text: #ffffff; --secondary: #8e8e93; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .main-content { width: 60%; padding: 20px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 20px; }
+        .main-content { width: 60%; padding: 20px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 20px; padding-bottom: 120px; }
         .sidebar { width: 40%; background: #000; }
         .coach-img { width: 100%; height: 100%; object-fit: cover; }
 
         .header-row { display: flex; justify-content: space-between; align-items: center; }
         h1 { font-size: 24px; margin: 0; color: var(--accent); }
 
-        /* Controls Row */
         .controls-row { display: flex; gap: 10px; }
         .btn { flex: 1; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-start { background: #30d158; color: black; }
         .btn-finish { background: #ff3b30; color: white; }
         .btn-config { background: #3a3a3c; color: white; flex: 0 0 50px; }
 
-        /* Exercise Cards */
         .card { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid #333; margin-bottom: 10px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        input, select { background: #2c2c2e; border: 1px solid #3a3a3c; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; }
+        .input-row { display: grid; gap: 8px; align-items: center; margin-bottom: 8px; text-align: center; font-size: 12px; color: var(--secondary); }
+        .weights-grid { grid-template-columns: 30px 1fr 1fr; }
+        .distance-grid { grid-template-columns: 1fr 1fr; }
+        .timed-grid { grid-template-columns: 30px 1fr; }
 
-        /* History & Calendar */
+        input, select { background: #2c2c2e; border: 1px solid #3a3a3c; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; text-align: center; font-size: 16px; }
+        .btn-add-set { background: transparent; color: var(--accent); border: 1px dashed var(--accent); width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; }
+
         .separator { height: 1px; background: #333; margin: 20px 0; }
-        .calendar-section { background: var(--card); padding: 15px; border-radius: 16px; text-align: center; }
-        .history-list { margin-top: 10px; text-align: left; font-size: 13px; color: var(--secondary); }
+        .calendar-section { background: var(--card); padding: 15px; border-radius: 16px; }
+        .history-list { margin-top: 10px; font-size: 14px; color: var(--text); }
+        .history-entry { border-bottom: 1px solid #333; padding: 12px 0; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; }
+        .delete-btn { color: #ff3b30; font-size: 18px; cursor: pointer; padding: 5px; }
+        .history-exercise-row { padding-left: 10px; color: var(--secondary); font-size: 13px; margin-top: 4px; }
+        
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 15px; }
+        .page-btn { background: #3a3a3c; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .page-btn:disabled { opacity: 0.3; }
     </style>
 </head>
 <body>
@@ -42,17 +52,19 @@
         </div>
 
         <div class="controls-row">
-            <button class="btn btn-start" onclick="startSession()">START SESSION</button>
-            <button class="btn btn-finish" onclick="finishSession()">FINISH SESSION</button>
+            <button class="btn btn-start" onclick="startSession()">START</button>
+            <button class="btn btn-finish" onclick="finishSession()">FINISH</button>
         </div>
 
         <div id="configPanel" style="display:none;" class="card">
-            <input type="text" id="newExName" placeholder="Exercise Name" style="margin-bottom:10px;">
-            <select id="newExType" style="margin-bottom:10px;">
-                <option value="weights">Weights (Lbs/Reps)</option>
+            <h4 style="margin:0 0 10px 0; color:var(--accent)">Add New Exercise</h4>
+            <input type="text" id="newExName" placeholder="Exercise Name">
+            <select id="newExType" style="margin: 10px 0;">
+                <option value="weights">Weights (Sets/Lbs/Reps)</option>
                 <option value="distance">Distance (Miles/Min)</option>
+                <option value="timed">Timed (Sets/Seconds)</option>
             </select>
-            <button class="btn btn-start" style="width:100%" onclick="saveToMaster()">Add to Master List</button>
+            <button class="btn btn-start" style="width:100%" onclick="saveToMaster()">Save to List</button>
         </div>
 
         <div id="activeWorkout"></div>
@@ -64,11 +76,13 @@
         <div class="separator"></div>
 
         <div class="calendar-section">
-            <h3 style="margin-top:0">Workout Calendar</h3>
-            <div id="calendarDisplay" style="font-size: 14px; color: var(--accent);">
-                Today: <span id="currentDateDisplay"></span>
-            </div>
+            <h3 style="margin-top:0; color: var(--accent);">History</h3>
             <div id="historyList" class="history-list"></div>
+            <div class="pagination">
+                <button id="prevBtn" class="page-btn" onclick="changePage(-1)">← Newer</button>
+                <span id="pageInfo" style="font-size: 12px;">Page 1</span>
+                <button id="nextBtn" class="page-btn" onclick="changePage(1)">Older →</button>
+            </div>
         </div>
     </div>
 
@@ -77,10 +91,11 @@
     </div>
 
     <script>
-        const MASTER_KEY = 'my_gym_list';
-        const HISTORY_KEY = 'my_gym_history';
-        
-        document.getElementById('currentDateDisplay').innerText = new Date().toDateString();
+        // Use a consistent key so your list doesn't disappear
+        const MASTER_KEY = 'gym_buddy_master_list';
+        const HISTORY_KEY = 'gym_buddy_history_data';
+        let currentPage = 1;
+        const recordsPerPage = 5;
 
         function toggleConfig() {
             const p = document.getElementById('configPanel');
@@ -88,9 +103,9 @@
         }
 
         function saveToMaster() {
-            const name = document.getElementById('newExName').value;
+            const name = document.getElementById('newExName').value.trim();
             const type = document.getElementById('newExType').value;
-            if(!name) return;
+            if(!name) { alert("Please enter a name"); return; }
             
             let list = JSON.parse(localStorage.getItem(MASTER_KEY) || '[]');
             list.push({name, type});
@@ -99,6 +114,7 @@
             document.getElementById('newExName').value = "";
             toggleConfig();
             refreshPicker();
+            alert(name + " added to list!");
         }
 
         function refreshPicker() {
@@ -116,48 +132,110 @@
         function addExercise(json) {
             if(!json) return;
             const ex = JSON.parse(json);
+            const container = document.getElementById('activeWorkout');
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between">
-                    <strong>${ex.name}</strong>
-                    <span onclick="this.closest('.card').remove()" style="color:#ff3b30; cursor:pointer">✕</span>
-                </div>
-                <div class="grid-2">
-                    <input type="number" placeholder="${ex.type === 'weights' ? 'Lbs' : 'Miles'}">
-                    <input type="number" placeholder="${ex.type === 'weights' ? 'Reps' : 'Min'}">
-                </div>
-            `;
-            document.getElementById('activeWorkout').appendChild(card);
+            
+            let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <strong style="color:var(--accent)">${ex.name}</strong>
+                    <span onclick="this.closest('.card').remove()" style="color:#ff3b30; cursor:pointer; font-weight:bold;">✕</span>
+                </div>`;
+
+            if(ex.type === 'weights') {
+                html += `<div class="input-row weights-grid"><span>1</span><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps"></div>
+                         <button class="btn-add-set" onclick="addSet(this, 'weights')">+ Add Set</button>`;
+            } else if(ex.type === 'distance') {
+                html += `<div class="input-row distance-grid"><input type="number" step="0.1" placeholder="Miles"><input type="number" placeholder="Min"></div>`;
+            } else if(ex.type === 'timed') {
+                html += `<div class="input-row timed-grid"><span>1</span><input type="number" placeholder="Seconds"></div>
+                         <button class="btn-add-set" onclick="addSet(this, 'timed')">+ Add Set</button>`;
+            }
+            card.innerHTML = html;
+            container.appendChild(card);
             document.getElementById('picker').value = "";
         }
 
-        function startSession() {
-            const startTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            alert("Session started at " + startTime);
+        function addSet(btn, type) {
+            const card = btn.closest('.card');
+            const setNum = card.querySelectorAll('.input-row').length + 1;
+            const row = document.createElement('div');
+            row.className = `input-row ${type === 'weights' ? 'weights-grid' : 'timed-grid'}`;
+            row.innerHTML = type === 'weights' ? 
+                `<span>${setNum}</span><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps">` :
+                `<span>${setNum}</span><input type="number" placeholder="Seconds">`;
+            btn.before(row);
         }
 
-        function finishSession() {
-            const cards = document.querySelectorAll('.card:not(#configPanel)');
-            if(cards.length === 0) return alert("Nothing to save!");
+        function startSession() { alert("Session started at " + new Date().toLocaleTimeString()); }
 
-            let summary = Array.from(cards).map(c => {
-                const name = c.querySelector('strong').innerText;
-                const vals = c.querySelectorAll('input');
-                return `${name}: ${vals[0].value}/${vals[1].value}`;
-            });
+        function finishSession() {
+            const cards = document.querySelectorAll('#activeWorkout .card');
+            if(cards.length === 0) return alert("Nothing to save. Add an exercise!");
+
+            let sessionData = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                exercises: Array.from(cards).map(c => {
+                    const name = c.querySelector('strong').innerText;
+                    const rows = c.querySelectorAll('.input-row');
+                    let sets = Array.from(rows).map(r => {
+                        const inputs = r.querySelectorAll('input');
+                        return inputs.length === 2 ? `${inputs[0].value || 0}/${inputs[1].value || 0}` : `${inputs[0].value || 0}s`;
+                    });
+                    return { name, sets };
+                })
+            };
 
             let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            history.unshift({ date: new Date().toLocaleDateString(), data: summary.join(', ') });
+            history.unshift(sessionData);
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            
             location.reload();
+        }
+
+        function deleteEntry(id) {
+            if(!confirm("Delete this session?")) return;
+            let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            history = history.filter(item => item.id !== id);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            loadHistory();
+        }
+
+        function changePage(dir) {
+            currentPage += dir;
+            loadHistory();
         }
 
         function loadHistory() {
             const hList = document.getElementById('historyList');
             const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            hList.innerHTML = history.map(h => `<div><strong>${h.date}:</strong> ${h.data}</div>`).join('');
+            
+            if (history.length === 0) {
+                hList.innerHTML = "<div style='color:gray; font-style:italic;'>No history yet.</div>";
+                document.querySelector('.pagination').style.display = 'none';
+                return;
+            }
+
+            document.querySelector('.pagination').style.display = 'flex';
+            const totalPages = Math.ceil(history.length / recordsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * recordsPerPage;
+            const paginatedItems = history.slice(start, start + recordsPerPage);
+
+            hList.innerHTML = paginatedItems.map(h => `
+                <div class="history-entry">
+                    <div class="history-header">
+                        <strong style="color:var(--accent)">${h.date}</strong>
+                        <span class="delete-btn" onclick="deleteEntry(${h.id})">🗑</span>
+                    </div>
+                    ${h.exercises.map(ex => `<div class="history-exercise-row">• ${ex.name}: ${ex.sets.join(', ')}</div>`).join('')}
+                </div>
+            `).join('');
+
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
 
         refreshPicker();
