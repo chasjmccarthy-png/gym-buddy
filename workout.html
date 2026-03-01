@@ -5,180 +5,195 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Workout Buddy</title>
     <style>
-        :root {
-            --bg: #000000;
-            --card-bg: #1c1c1e;
-            --accent: #ff9500;
+        :root { 
+            --bg: #000000; 
+            --card: #1c1c1e; 
+            --accent: #ff9500; 
             --text: #ffffff;
-            --secondary-text: #8e8e93;
+            --secondary: #8e8e93;
         }
-        body {
-            font-family: -apple-system, system-ui, sans-serif;
-            background-color: var(--bg);
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); 
             color: var(--text);
-            margin: 0;
+            margin: 0; 
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
-        /* LEFT SIDE: Logic & Inputs */
-        .main-content {
-            width: 60%;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow-y: auto;
-            border-right: 1px solid #333;
-        }
-        /* RIGHT SIDE: Image & Live Stats */
-        .sidebar {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            background: #000;
-        }
-        .coach-box {
-            flex-grow: 1;
-            position: relative;
-        }
-        .coach-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .stats-overlay {
-            padding: 20px;
-            background: var(--card-bg);
-            border-top: 2px solid var(--accent);
-        }
-        /* UI Elements */
-        .header-row { display: flex; justify-content: space-between; align-items: center; }
-        .config-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 5px 10px; border-radius: 8px; font-size: 12px; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 12px; color: var(--secondary-text); font-weight: bold; }
-        input, select {
-            background: #2c2c2e;
-            border: 1px solid #3a3a3c;
-            color: white;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 16px;
-        }
-        .action-btn {
-            background: var(--accent);
-            color: black;
-            font-weight: bold;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-        .stop-btn { background: #ff3b30; color: white; }
-        .volume-display { font-size: 36px; font-weight: 900; color: var(--accent); margin-top: 5px; }
+        
+        /* Layout */
+        .main-content { width: 65%; padding: 15px; overflow-y: auto; padding-bottom: 100px; border-right: 1px solid #333; }
+        .sidebar { width: 35%; display: flex; flex-direction: column; background: #000; }
+
+        /* Session Header */
+        .session-bar { display: flex; gap: 5px; background: #2c2c2e; padding: 10px; border-radius: 12px; margin-bottom: 15px; }
+        .session-bar input { flex: 1; padding: 8px; border-radius: 8px; border: none; font-size: 12px; background: #3a3a3c; color: white; }
+
+        .header-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        h1 { font-size: 20px; margin: 0; color: var(--accent); }
+
+        /* Workout Cards */
+        .card { background: var(--card); padding: 15px; border-radius: 16px; margin-bottom: 12px; border: 1px solid #333; }
+        .input-row { display: grid; gap: 8px; align-items: center; margin-bottom: 8px; text-align: center; }
+        .weights-grid { grid-template-columns: 25px 1fr 1fr; }
+        .distance-grid { grid-template-columns: 1fr 1fr; }
+        .timed-grid { grid-template-columns: 25px 1fr; }
+
+        input { width: 85%; padding: 10px; border: 1px solid #3a3a3c; border-radius: 10px; font-size: 16px; text-align: center; background: #2c2c2e; color: white; }
+        
+        .btn { padding: 8px 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-add-set { background: transparent; color: var(--accent); width: 100%; margin-top: 5px; border: 1px dashed var(--accent); }
+        
+        /* Config */
+        .config-panel { display:none; background: #2c2c2e; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--accent); }
+        
+        /* Sidebar Elements */
+        .coach-img { width: 100%; height: 70%; object-fit: cover; }
+        .stats-box { flex-grow: 1; padding: 15px; background: var(--card); border-top: 2px solid var(--accent); text-align: center; }
+        .volume-num { font-size: 32px; font-weight: 900; color: var(--accent); }
+
+        .footer-nav { position: fixed; bottom: 0; left: 0; width: 65%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding: 15px; border-top: 1px solid #333; box-sizing: border-box; }
+        select { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; background: #1c1c1e; color: white; border: 1px solid var(--accent); }
     </style>
 </head>
 <body>
 
     <div class="main-content">
-        <div class="header-row">
-            <h1 style="margin:0; font-size: 24px;">Workout Buddy</h1>
-            <button class="config-btn" onclick="toggleConfig()">CONFIG</button>
+        <div class="header-main">
+            <h1>Workout Buddy</h1>
+            <button class="btn" style="background:#3a3a3c; color:white;" onclick="toggleConfig()">⚙️ Config</button>
         </div>
 
-        <div id="sessionInfo" style="font-size: 14px; color: var(--secondary-text);">
-            <span id="displayDate"></span> | <span id="displayTime">--:--</span>
+        <div class="session-bar">
+            <input type="date" id="workoutDate">
+            <input type="time" id="startTime">
+            <input type="time" id="endTime">
         </div>
 
-        <div class="input-group">
-            <label>EXERCISE</label>
-            <select id="exerciseSelect">
-                <option>Select Exercise...</option>
+        <div id="config" class="config-panel">
+            <label style="display:block; font-size:11px; font-weight:bold; margin-bottom:5px;">ADD EXERCISE:</label>
+            <input type="text" id="newExName" placeholder="Name (e.g. Bench Press)" style="width:90%; margin-bottom:10px;">
+            
+            <label style="display:block; font-size:11px; font-weight:bold; margin-bottom:5px;">TYPE:</label>
+            <select id="newExType" style="margin-bottom:10px;">
+                <option value="weights">Weights (Lbs/Reps)</option>
+                <option value="distance">Distance (Miles/Min)</option>
+                <option value="timed">Timed (Seconds)</option>
+            </select>
+            <button class="btn" style="background:var(--accent); color:black; width:100%;" onclick="saveToMaster()">Save to List</button>
+        </div>
+
+        <div id="activeWorkout"></div>
+
+        <div class="footer-nav">
+            <select id="picker" onchange="addExerciseToScreen(this.value)">
+                <option value="">+ Add Exercise...</option>
             </select>
         </div>
-
-        <div style="display: flex; gap: 10px;">
-            <div class="input-group" style="flex: 1;">
-                <label>WEIGHT (LBS)</label>
-                <input type="number" id="weightInput" placeholder="0">
-            </div>
-            <div class="input-group" style="flex: 1;">
-                <label>REPS</label>
-                <input type="number" id="repsInput" placeholder="0">
-            </div>
-        </div>
-
-        <button class="action-btn" onclick="logSet()">LOG SET</button>
-        <button id="mainAction" class="action-btn" style="background:#30d158" onclick="handleSession()">START SESSION</button>
-
-        <div id="logList" style="margin-top:10px; font-size: 13px; color: var(--secondary-text);">
-            </div>
     </div>
 
     <div class="sidebar">
-        <div class="coach-box">
-            <img src="profile.jpg" onerror="this.src='https://via.placeholder.com/400x800?text=Coach+Photo'" alt="Coach">
-        </div>
-        <div class="stats-overlay">
-            <label>SESSION VOLUME</label>
-            <div id="totalVolume" class="volume-display">0</div>
+        <img src="profile.jpg" class="coach-img" alt="Coach">
+        <div class="stats-box">
+            <div style="font-size: 10px; color: var(--secondary);">SESSION VOLUME</div>
+            <div id="totalVolume" class="volume-num">0</div>
+            <div style="font-size: 10px; color: var(--secondary); margin-top:5px;">LBS</div>
         </div>
     </div>
 
     <script>
-        let totalVolume = 0;
-        let isSessionActive = false;
-        let startTime = null;
+        document.getElementById('workoutDate').valueAsDate = new Date();
+        const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+        document.getElementById('startTime').value = now;
 
-        // Initialize Date
-        document.getElementById('displayDate').innerText = new Date().toLocaleDateString();
+        const MASTER_KEY = 'exercise_list_v3';
+        let masterList = JSON.parse(localStorage.getItem(MASTER_KEY)) || [
+            { name: "Bench Press", type: "weights" },
+            { name: "Running", type: "distance" }
+        ];
 
-        function handleSession() {
-            const btn = document.getElementById('mainAction');
-            if (!isSessionActive) {
-                isSessionActive = true;
-                startTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('displayTime').innerText = "Started: " + startTime;
-                btn.innerText = "END SESSION";
-                btn.classList.add('stop-btn');
-            } else {
-                alert("Workout Summary\nTotal Volume: " + totalVolume + " lbs");
-                location.reload(); // Resets for next time
-            }
-        }
-
-        function logSet() {
-            if (!isSessionActive) { alert("Start the session first!"); return; }
-            
-            const w = parseFloat(document.getElementById('weightInput').value);
-            const r = parseFloat(document.getElementById('repsInput').value);
-            const ex = document.getElementById('exerciseSelect').value;
-
-            if (w && r) {
-                const setVolume = w * r;
-                totalVolume += setVolume;
-                document.getElementById('totalVolume').innerText = totalVolume.toLocaleString();
-                
-                // Add to mini log
-                const logEntry = document.createElement('div');
-                logEntry.innerText = `${ex}: ${w} x ${r}`;
-                document.getElementById('logList').prepend(logEntry);
-                
-                // Clear inputs
-                document.getElementById('weightInput').value = "";
-                document.getElementById('repsInput').value = "";
-            }
+        function refreshPicker() {
+            const picker = document.getElementById('picker');
+            picker.innerHTML = '<option value="">+ Add Exercise...</option>';
+            masterList.forEach(ex => {
+                let opt = document.createElement('option');
+                opt.value = JSON.stringify(ex);
+                opt.textContent = ex.name;
+                picker.appendChild(opt);
+            });
         }
 
         function toggleConfig() {
-            const newEx = prompt("Enter a new exercise name:");
-            if (newEx) {
-                const option = document.createElement("option");
-                option.text = newEx;
-                document.getElementById('exerciseSelect').add(option);
+            const cfg = document.getElementById('config');
+            cfg.style.display = (cfg.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function saveToMaster() {
+            const name = document.getElementById('newExName').value.trim();
+            const type = document.getElementById('newExType').value;
+            if(name) {
+                masterList.push({ name, type });
+                localStorage.setItem(MASTER_KEY, JSON.stringify(masterList));
+                refreshPicker();
+                document.getElementById('newExName').value = "";
+                toggleConfig();
             }
         }
+
+        function addExerciseToScreen(json) {
+            if(!json) return;
+            const ex = JSON.parse(json);
+            const container = document.getElementById('activeWorkout');
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            let innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <strong style="color:var(--accent)">${ex.name}</strong>
+                    <button onclick="this.closest('.card').remove()" style="border:none; background:#ff3b30; color:white; border-radius:50%; width:20px; height:20px; font-size:10px;">✕</button>
+                </div>`;
+
+            if(ex.type === 'weights') {
+                innerHTML += `
+                    <div class="input-row weights-grid" style="font-size:10px; color:#8e8e93;"><span>SET</span><span>LBS</span><span>REPS</span></div>
+                    <div class="input-row weights-grid"><span>1</span><input type="number" oninput="calcVol()"> <input type="number" oninput="calcVol()"></div>
+                    <button class="btn btn-add-set" onclick="addSet(this, 'weights')">+ Add Set</button>`;
+            } else if(ex.type === 'distance') {
+                innerHTML += `
+                    <div class="input-row distance-grid" style="font-size:10px; color:#8e8e93;"><span>MILES</span><span>MIN</span></div>
+                    <div class="input-row distance-grid"><input type="number" step="0.1"> <input type="number"></div>`;
+            }
+
+            card.innerHTML = innerHTML;
+            container.appendChild(card);
+            document.getElementById('picker').value = "";
+        }
+
+        function addSet(btn, type) {
+            const parent = btn.parentElement;
+            const setNum = parent.querySelectorAll('.input-row').length;
+            const setRow = document.createElement('div');
+            setRow.className = `input-row ${type === 'weights' ? 'weights-grid' : 'timed-grid'}`;
+            setRow.innerHTML = `<span>${setNum}</span><input type="number" oninput="calcVol()"><input type="number" oninput="calcVol()">`;
+            btn.before(setRow);
+        }
+
+        function calcVol() {
+            let total = 0;
+            const inputs = document.querySelectorAll('.weights-grid');
+            inputs.forEach(row => {
+                const vals = row.querySelectorAll('input');
+                if(vals.length === 2) {
+                    const weight = parseFloat(vals[0].value) || 0;
+                    const reps = parseFloat(vals[1].value) || 0;
+                    total += (weight * reps);
+                }
+            });
+            document.getElementById('totalVolume').innerText = total.toLocaleString();
+        }
+
+        refreshPicker();
     </script>
 </body>
 </html>
