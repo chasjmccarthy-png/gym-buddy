@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gym Buddy PWA</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card-bg: #1c1c1e;
+            --accent: #ff9500;
+            --text: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* LEFT COLUMN: Input & Controls */
+        .input-side {
+            width: 60%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid #333;
+        }
+        /* RIGHT COLUMN: Image & Stats */
+        .stats-side {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+        }
+        .coach-image-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        .coach-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .stats-overlay {
+            padding: 20px;
+            background: var(--card-bg);
+            border-top: 2px solid var(--accent);
+        }
+        .volume-label { font-size: 12px; color: #8e8e93; font-weight: bold; }
+        .volume-number { font-size: 32px; font-weight: 900; color: var(--accent); }
+        
+        input, select, button {
+            background: var(--card-bg);
+            border: 1px solid #38383a;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+        button {
+            background: var(--accent);
+            color: black;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        .active { background: #ff3b30; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="input-side">
+        <h2 style="margin:0; color:var(--accent);">SESSION</h2>
+        
+        <select id="exercise">
+            <option>Bench Press</option>
+            <option>Squats</option>
+            <option>Deadlift</option>
+        </select>
+
+        <div style="display:flex; gap:10px;">
+            <input type="number" id="weight" placeholder="lbs" style="width:50%">
+            <input type="number" id="reps" placeholder="reps" style="width:50%">
+        </div>
+
+        <button id="logBtn" onclick="logSet()">LOG SET</button>
+        <button id="sessionBtn" onclick="toggleSession()">START SESSION</button>
+    </div>
+
+    <div class="stats-side">
+        <div class="coach-image-container">
+            <img src="profile.jpg" onerror="this.src='https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop'" alt="Coach">
+        </div>
+        <div class="stats-overlay">
+            <div class="volume-label">TOTAL VOLUME</div>
+            <div id="totalVolume" class="volume-number">0</div>
+        </div>
+    </div>
+
+    <script>
+        let totalVolume = 0;
+        let sessionActive = false;
+
+        function logSet() {
+            const w = document.getElementById('weight').value;
+            const r = document.getElementById('reps').value;
+            if(w && r) {
+                totalVolume += (w * r);
+                document.getElementById('totalVolume').innerText = totalVolume.toLocaleString();
+            }
+        }
+
+        function toggleSession() {
+            sessionActive = !sessionActive;
+            const btn = document.getElementById('sessionBtn');
+            btn.innerText = sessionActive ? "END SESSION" : "START SESSION";
+            btn.classList.toggle('active');
+            if(!sessionActive) {
+                alert("Workout Complete! Total Volume: " + totalVolume);
+                totalVolume = 0;
+                document.getElementById('totalVolume').innerText = "0";
+            }
+        }
+    </script>
+</body>
+</html>
