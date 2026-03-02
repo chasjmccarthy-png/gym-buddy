@@ -8,7 +8,8 @@
         :root { --bg: #000000; --card: #1c1c1e; --accent: #ff9500; --text: #ffffff; --secondary: #8e8e93; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        .main-content { width: 60%; padding: 20px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 20px; padding-bottom: 120px; }
+        /* Fixed: Added 40px top padding so the title isn't cut off */
+        .main-content { width: 60%; padding: 40px 20px 120px 20px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 20px; }
         .sidebar { width: 40%; background: #000; }
         .coach-img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -51,195 +52,194 @@
         <button class="btn btn-config" onclick="toggleConfig()">⚙️</button>
     </div>
 
-        <div class="controls-row">
-            <button class="btn btn-start" onclick="startSession()">START</button>
-            <button class="btn btn-finish" onclick="finishSession()">FINISH</button>
-        </div>
+    <div class="controls-row">
+        <button class="btn btn-start" onclick="startSession()">START</button>
+        <button class="btn btn-finish" onclick="finishSession()">FINISH</button>
+    </div>
 
-        <div id="configPanel" style="display:none;" class="card">
-            <h4 style="margin:0 0 10px 0; color:var(--accent)">Add New Exercise</h4>
-            <input type="text" id="newExName" placeholder="Exercise Name">
-            <select id="newExType" style="margin: 10px 0;">
-                <option value="weights">Weights (Sets/Lbs/Reps)</option>
-                <option value="distance">Distance (Miles/Min)</option>
-                <option value="timed">Timed (Sets/Seconds)</option>
-            </select>
-            <button class="btn btn-start" style="width:100%" onclick="saveToMaster()">Save to List</button>
-        </div>
-
-        <div id="activeWorkout"></div>
-
-        <select id="picker" onchange="addExercise(this.value)">
-            <option value="">+ Add Exercise...</option>
+    <div id="configPanel" style="display:none;" class="card">
+        <h4 style="margin:0 0 10px 0; color:var(--accent)">Add New Exercise</h4>
+        <input type="text" id="newExName" placeholder="Exercise Name">
+        <select id="newExType" style="margin: 10px 0;">
+            <option value="weights">Weights (Sets/Lbs/Reps)</option>
+            <option value="distance">Distance (Miles/Min)</option>
+            <option value="timed">Timed (Sets/Seconds)</option>
         </select>
+        <button class="btn btn-start" style="width:100%" onclick="saveToMaster()">Save to List</button>
+    </div>
 
-        <div class="separator"></div>
+    <div id="activeWorkout"></div>
 
-        <div class="calendar-section">
-            <h3 style="margin-top:0; color: var(--accent);">History</h3>
-            <div id="historyList" class="history-list"></div>
-            <div class="pagination">
-                <button id="prevBtn" class="page-btn" onclick="changePage(-1)">← Newer</button>
-                <span id="pageInfo" style="font-size: 12px;">Page 1</span>
-                <button id="nextBtn" class="page-btn" onclick="changePage(1)">Older →</button>
-            </div>
+    <select id="picker" onchange="addExercise(this.value)">
+        <option value="">+ Add Exercise...</option>
+    </select>
+
+    <div class="separator"></div>
+
+    <div class="calendar-section">
+        <h3 style="margin-top:0; color: var(--accent);">History</h3>
+        <div id="historyList" class="history-list"></div>
+        <div class="pagination">
+            <button id="prevBtn" class="page-btn" onclick="changePage(-1)">← Newer</button>
+            <span id="pageInfo" style="font-size: 12px;">Page 1</span>
+            <button id="nextBtn" class="page-btn" onclick="changePage(1)">Older →</button>
         </div>
     </div>
+</div>
 
-    <div class="sidebar">
-        <img src="profile.jpg" class="coach-img" alt="Coach">
-    </div>
+<div class="sidebar">
+    <img src="profile.jpg" class="coach-img" alt="Coach">
+</div>
 
-    <script>
-        // Use a consistent key so your list doesn't disappear
-        const MASTER_KEY = 'gym_buddy_master_list';
-        const HISTORY_KEY = 'gym_buddy_history_data';
-        let currentPage = 1;
-        const recordsPerPage = 5;
+<script>
+    const MASTER_KEY = 'gym_buddy_master_list';
+    const HISTORY_KEY = 'gym_buddy_history_data';
+    let currentPage = 1;
+    const recordsPerPage = 5;
 
-        function toggleConfig() {
-            const p = document.getElementById('configPanel');
-            p.style.display = p.style.display === 'none' ? 'block' : 'none';
-        }
+    function toggleConfig() {
+        const p = document.getElementById('configPanel');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    }
 
-        function saveToMaster() {
-            const name = document.getElementById('newExName').value.trim();
-            const type = document.getElementById('newExType').value;
-            if(!name) { alert("Please enter a name"); return; }
-            
-            let list = JSON.parse(localStorage.getItem(MASTER_KEY) || '[]');
-            list.push({name, type});
-            localStorage.setItem(MASTER_KEY, JSON.stringify(list));
-            
-            document.getElementById('newExName').value = "";
-            toggleConfig();
-            refreshPicker();
-            alert(name + " added to list!");
-        }
-
-        function refreshPicker() {
-            const picker = document.getElementById('picker');
-            const list = JSON.parse(localStorage.getItem(MASTER_KEY) || '[]');
-            picker.innerHTML = '<option value="">+ Add Exercise...</option>';
-            list.forEach(ex => {
-                let opt = document.createElement('option');
-                opt.value = JSON.stringify(ex);
-                opt.textContent = ex.name;
-                picker.appendChild(opt);
-            });
-        }
-
-        function addExercise(json) {
-            if(!json) return;
-            const ex = JSON.parse(json);
-            const container = document.getElementById('activeWorkout');
-            const card = document.createElement('div');
-            card.className = 'card';
-            
-            let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <strong style="color:var(--accent)">${ex.name}</strong>
-                    <span onclick="this.closest('.card').remove()" style="color:#ff3b30; cursor:pointer; font-weight:bold;">✕</span>
-                </div>`;
-
-            if(ex.type === 'weights') {
-                html += `<div class="input-row weights-grid"><span>1</span><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps"></div>
-                         <button class="btn-add-set" onclick="addSet(this, 'weights')">+ Add Set</button>`;
-            } else if(ex.type === 'distance') {
-                html += `<div class="input-row distance-grid"><input type="number" step="0.1" placeholder="Miles"><input type="number" placeholder="Min"></div>`;
-            } else if(ex.type === 'timed') {
-                html += `<div class="input-row timed-grid"><span>1</span><input type="number" placeholder="Seconds"></div>
-                         <button class="btn-add-set" onclick="addSet(this, 'timed')">+ Add Set</button>`;
-            }
-            card.innerHTML = html;
-            container.appendChild(card);
-            document.getElementById('picker').value = "";
-        }
-
-        function addSet(btn, type) {
-            const card = btn.closest('.card');
-            const setNum = card.querySelectorAll('.input-row').length + 1;
-            const row = document.createElement('div');
-            row.className = `input-row ${type === 'weights' ? 'weights-grid' : 'timed-grid'}`;
-            row.innerHTML = type === 'weights' ? 
-                `<span>${setNum}</span><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps">` :
-                `<span>${setNum}</span><input type="number" placeholder="Seconds">`;
-            btn.before(row);
-        }
-
-        function startSession() { alert("Session started at " + new Date().toLocaleTimeString()); }
-
-        function finishSession() {
-            const cards = document.querySelectorAll('#activeWorkout .card');
-            if(cards.length === 0) return alert("Nothing to save. Add an exercise!");
-
-            let sessionData = {
-                id: Date.now(),
-                date: new Date().toLocaleDateString(),
-                exercises: Array.from(cards).map(c => {
-                    const name = c.querySelector('strong').innerText;
-                    const rows = c.querySelectorAll('.input-row');
-                    let sets = Array.from(rows).map(r => {
-                        const inputs = r.querySelectorAll('input');
-                        return inputs.length === 2 ? `${inputs[0].value || 0}/${inputs[1].value || 0}` : `${inputs[0].value || 0}s`;
-                    });
-                    return { name, sets };
-                })
-            };
-
-            let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            history.unshift(sessionData);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            location.reload();
-        }
-
-        function deleteEntry(id) {
-            if(!confirm("Delete this session?")) return;
-            let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            history = history.filter(item => item.id !== id);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            loadHistory();
-        }
-
-        function changePage(dir) {
-            currentPage += dir;
-            loadHistory();
-        }
-
-        function loadHistory() {
-            const hList = document.getElementById('historyList');
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-            
-            if (history.length === 0) {
-                hList.innerHTML = "<div style='color:gray; font-style:italic;'>No history yet.</div>";
-                document.querySelector('.pagination').style.display = 'none';
-                return;
-            }
-
-            document.querySelector('.pagination').style.display = 'flex';
-            const totalPages = Math.ceil(history.length / recordsPerPage);
-            if (currentPage > totalPages) currentPage = totalPages;
-            if (currentPage < 1) currentPage = 1;
-
-            const start = (currentPage - 1) * recordsPerPage;
-            const paginatedItems = history.slice(start, start + recordsPerPage);
-
-            hList.innerHTML = paginatedItems.map(h => `
-                <div class="history-entry">
-                    <div class="history-header">
-                        <strong style="color:var(--accent)">${h.date}</strong>
-                        <span class="delete-btn" onclick="deleteEntry(${h.id})">🗑</span>
-                    </div>
-                    ${h.exercises.map(ex => `<div class="history-exercise-row">• ${ex.name}: ${ex.sets.join(', ')}</div>`).join('')}
-                </div>
-            `).join('');
-
-            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
-        }
-
+    function saveToMaster() {
+        const name = document.getElementById('newExName').value.trim();
+        const type = document.getElementById('newExType').value;
+        if(!name) { alert("Please enter a name"); return; }
+        
+        let list = JSON.parse(localStorage.getItem(MASTER_KEY) || '[]');
+        list.push({name, type});
+        localStorage.setItem(MASTER_KEY, JSON.stringify(list));
+        
+        document.getElementById('newExName').value = "";
+        toggleConfig();
         refreshPicker();
+        alert(name + " added to list!");
+    }
+
+    function refreshPicker() {
+        const picker = document.getElementById('picker');
+        const list = JSON.parse(localStorage.getItem(MASTER_KEY) || '[]');
+        picker.innerHTML = '<option value="">+ Add Exercise...</option>';
+        list.forEach(ex => {
+            let opt = document.createElement('option');
+            opt.value = JSON.stringify(ex);
+            opt.textContent = ex.name;
+            picker.appendChild(opt);
+        });
+    }
+
+    function addExercise(json) {
+        if(!json) return;
+        const ex = JSON.parse(json);
+        const container = document.getElementById('activeWorkout');
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        let html = `<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <strong style="color:var(--accent)">${ex.name}</strong>
+                <span onclick="this.closest('.card').remove()" style="color:#ff3b30; cursor:pointer; font-weight:bold;">✕</span>
+            </div>`;
+
+        if(ex.type === 'weights') {
+            html += `<div class="input-row weights-grid"><span>1</span><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps"></div>
+                     <button class="btn-add-set" onclick="addSet(this, 'weights')">+ Add Set</button>`;
+        } else if(ex.type === 'distance') {
+            html += `<div class="input-row distance-grid"><input type="number" step="0.1" placeholder="Miles"><input type="number" placeholder="Min"></div>`;
+        } else if(ex.type === 'timed') {
+            html += `<div class="input-row timed-grid"><span>1</span><input type="number" placeholder="Seconds"></div>
+                     <button class="btn-add-set" onclick="addSet(this, 'timed')">+ Add Set</button>`;
+        }
+        card.innerHTML = html;
+        container.appendChild(card);
+        document.getElementById('picker').value = "";
+    }
+
+    function addSet(btn, type) {
+        const card = btn.closest('.card');
+        const setNum = card.querySelectorAll('.input-row').length + 1;
+        const row = document.createElement('div');
+        row.className = `input-row ${type === 'weights' ? 'weights-grid' : 'timed-grid'}`;
+        row.innerHTML = type === 'weights' ? 
+            `<span>${setNum}</span><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps">` :
+            `<span>${setNum}</span><input type="number" placeholder="Seconds">`;
+        btn.before(row);
+    }
+
+    function startSession() { alert("Session started at " + new Date().toLocaleTimeString()); }
+
+    function finishSession() {
+        const cards = document.querySelectorAll('#activeWorkout .card');
+        if(cards.length === 0) return alert("Nothing to save. Add an exercise!");
+
+        let sessionData = {
+            id: Date.now(),
+            date: new Date().toLocaleDateString(),
+            exercises: Array.from(cards).map(c => {
+                const name = c.querySelector('strong').innerText;
+                const rows = c.querySelectorAll('.input-row');
+                let sets = Array.from(rows).map(r => {
+                    const inputs = r.querySelectorAll('input');
+                    return inputs.length === 2 ? `${inputs[0].value || 0}/${inputs[1].value || 0}` : `${inputs[0].value || 0}s`;
+                });
+                return { name, sets };
+            })
+        };
+
+        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        history.unshift(sessionData);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        location.reload();
+    }
+
+    function deleteEntry(id) {
+        if(!confirm("Delete this session?")) return;
+        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        history = history.filter(item => item.id !== id);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
         loadHistory();
-    </script>
+    }
+
+    function changePage(dir) {
+        currentPage += dir;
+        loadHistory();
+    }
+
+    function loadHistory() {
+        const hList = document.getElementById('historyList');
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        
+        if (history.length === 0) {
+            hList.innerHTML = "<div style='color:gray; font-style:italic;'>No history yet.</div>";
+            document.querySelector('.pagination').style.display = 'none';
+            return;
+        }
+
+        document.querySelector('.pagination').style.display = 'flex';
+        const totalPages = Math.ceil(history.length / recordsPerPage);
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const start = (currentPage - 1) * recordsPerPage;
+        const paginatedItems = history.slice(start, start + recordsPerPage);
+
+        hList.innerHTML = paginatedItems.map(h => `
+            <div class="history-entry">
+                <div class="history-header">
+                    <strong style="color:var(--accent)">${h.date}</strong>
+                    <span class="delete-btn" onclick="deleteEntry(${h.id})">🗑</span>
+                </div>
+                ${h.exercises.map(ex => `<div class="history-exercise-row">• ${ex.name}: ${ex.sets.join(', ')}</div>`).join('')}
+            </div>
+        `).join('');
+
+        document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage === totalPages;
+    }
+
+    refreshPicker();
+    loadHistory();
+</script>
 </body>
 </html>
